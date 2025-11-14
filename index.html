@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Paebbl – CO₂ Savings Calculator (Simple)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #111827;
+      background: #f3f4f6;
+    }
+    body {
+      max-width: 720px;
+      margin: 2rem auto;
+      padding: 0 1rem 3rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+      max-width: 600px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e5e7eb;
+      margin-bottom: 1.25rem;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+    .card p.desc {
+      font-size: 0.9rem;
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    select, input[type="range"] {
+      width: 100%;
+      padding: 0.45rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+    .field {
+      margin-bottom: 0.9rem;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    input[type="range"] {
+      flex: 1;
+      padding: 0;
+    }
+    .slider-value {
+      font-size: 0.9rem;
+      min-width: 3.5rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .note {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 0.25rem;
+    }
+    .results-main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      text-align: center;
+    }
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #166534;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .big-number {
+      font-size: 2.3rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .big-number span.small {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-left: 0.3rem;
+      color: #6b7280;
+    }
+    .delta-text {
+      font-size: 0.95rem;
+      color: #4b5563;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+      font-size: 0.9rem;
+    }
+    .summary-item {
+      padding: 0.75rem;
+      border-radius: 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      text-align: left;
+    }
+    .summary-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9ca3af;
+      margin-bottom: 0.25rem;
+    }
+    .summary-value {
+      font-size: 1.0rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .summary-sub {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <h1>CO₂ savings with Paebbl</h1>
+  <p class="subtitle">
+    Choose your cement type and Paebbl replacement level to estimate the CO₂e reduction
+    per m³ of concrete. A fixed typical concrete mix is assumed in the background.
+  </p>
+
+  <!-- Inputs -->
+  <div class="card">
+    <h2>1. Your mix configuration</h2>
+    <p class="desc">
+      Select your cement type and how much of it is replaced by Paebbl.
+    </p>
+
+    <div class="field">
+      <label for="cementType">Cement type</label>
+      <select id="cementType">
+        <option value="cement_cem1">CEM I</option>
+        <option value="cement_cem2">CEM II</option>
+        <option value="cement_cem3">CEM III</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="replacementPct">Paebbl replacement (%)</label>
+      <div class="slider-row">
+        <input id="replacementPct" type="range" min="0" max="30" step="1" value="20" />
+        <div class="slider-value"><span id="replacementPctValue">20</span>%</div>
+      </div>
+      <p class="note">
+        Slider limited to 0–30% replacement for this simplified tool.
+      </p>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card">
+    <h2>2. Results per m³ (A1–A3)</h2>
+    <p class="desc">
+      Conservative view: process emissions (A1–A3). Permanent CO₂ storage is shown separately.
+    </p>
+
+    <div class="results-main">
+      <div class="badge">A1–A3 reduction</div>
+      <div class="big-number">
+        <span id="reductionPct">0.0</span>%
+        <span class="small">vs. baseline</span>
+      </div>
+      <div class="delta-text">
+        <span id="reductionAbs">0.0</span> kg CO₂e/m³ saved
+      </div>
+
+      <div class="pill" id="storagePill" style="display:none;">
+        Storage: <span id="storedCO2">0.0</span> kg CO₂ permanently stored
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-label">Baseline mix</div>
+        <div class="summary-value">
+          <span id="gwpBaseline">0.0</span> kg CO₂e/m³
+        </div>
+        <div class="summary-sub">
+          Typical concrete with your chosen cement, no Paebbl.
+        </div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Paebbl mix</div>
+        <div class="summary-value">
+          <span id="gwpPaebbl">0.0</span> kg CO₂e/m³
+        </div>
+        <div class="summary-sub">
+          With <span id="replacementSummary">0</span>% Paebbl replacement (A1–A3 only).
+        </div>
+      </div>
+    </div>
+
+    <p class="note" style="margin-top: 1rem;">
+      For detailed LCAs or project-specific reporting, use your exact mix and verified EPD data.
+    </p>
+  </div>
+
+  <script>
+    // ------------------------------------------------------------
+    // Engine: JS version of your calculator
+    // ------------------------------------------------------------
+
+    const DEFAULT_EMISSION_FACTORS = {
+      cement_cem1: 0.857,
+      cement_cem2: 0.657,
+      cement_cem3: 0.457,
+      paebbl: 0.0,      // A1-A3 footprint (storage separate)
+      limestone: 0.12,
+      sand: 0.00237,
+      gravel: 0.0101,
+      admix_generic: 1.5,
+      water: 0.0
+    };
+
+    const MATERIAL_LABELS = {
+      cement_cem1: "CEM I",
+      cement_cem2: "CEM II",
+      cement_cem3: "CEM III",
+      paebbl: "Paebbl",
+      limestone: "Limestone filler",
+      sand: "Sand",
+      gravel: "Gravel",
+      admix_generic: "Admixture",
+      water: "Water"
+    };
+
+    function calculate(input) {
+      const baseline = input.baseline || [];
+      const paebbl = input.paebbl || [];
+      const storageFactorPerKgPaebbl =
+        typeof input.storageFactorPerKgPaebbl === "number"
+          ? input.storageFactorPerKgPaebbl
+          : 0.9; // default from TS
+      const includeStorageInNet = !!input.includeStorageInNet;
+
+      const baselineContributions = baseline.map((mat) => {
+        const ef =
+          typeof mat.ef === "number"
+            ? mat.ef
+            : DEFAULT_EMISSION_FACTORS[mat.key] || 0;
+        const gwp = mat.mass * ef;
+        return {
+          key: mat.key,
+          label: MATERIAL_LABELS[mat.key] || mat.key,
+          gwp,
+          mass: mat.mass,
+          ef
+        };
+      });
+      const gwpBaseline = baselineContributions.reduce((sum, c) => sum + c.gwp, 0);
+
+      const paebblContributions = paebbl.map((mat) => {
+        const ef =
+          typeof mat.ef === "number"
+            ? mat.ef
+            : DEFAULT_EMISSION_FACTORS[mat.key] || 0;
+        const gwp = mat.mass * ef;
+        return {
+          key: mat.key,
+          label: MATERIAL_LABELS[mat.key] || mat.key,
+          gwp,
+          mass: mat.mass,
+          ef
+        };
+      });
+      const gwpPaebbl = paebblContributions.reduce((sum, c) => sum + c.gwp, 0);
+
+      const reductionAbs = gwpBaseline - gwpPaebbl;
+      const reductionPct = gwpBaseline > 0 ? (reductionAbs / gwpBaseline) * 100 : 0;
+
+      const paebblMaterial = paebbl.find((m) => m.key === "paebbl");
+      const co2Stored = paebblMaterial
+        ? paebblMaterial.mass * storageFactorPerKgPaebbl
+        : 0;
+
+      const netClimateImpact = includeStorageInNet
+        ? gwpPaebbl - co2Stored
+        : undefined;
+
+      return {
+        gwpBaseline,
+        gwpPaebbl,
+        reductionAbs,
+        reductionPct,
+        co2Stored,
+        netClimateImpact
+      };
+    }
+
+    function generatePaebblMix(baseline, replacementPct, cementKey = "cement_cem3") {
+      const cement = baseline.find((m) => m.key === cementKey);
+      if (!cement) {
+        throw new Error("Cement material " + cementKey + " not found in baseline");
+      }
+
+      const paebblMass = (cement.mass * replacementPct) / 100;
+      const remainingCement = cement.mass - paebblMass;
+
+      const paebblMix = baseline.map((m) => {
+        if (m.key === cementKey) {
+          return Object.assign({}, m, { mass: remainingCement });
+        }
+        return Object.assign({}, m);
+      });
+
+      paebblMix.push({ key: "paebbl", mass: paebblMass });
+
+      return paebblMix;
+    }
+
+    // ------------------------------------------------------------
+    // UI wiring (simple)
+    // ------------------------------------------------------------
+
+    const cementTypeEl = document.getElementById("cementType");
+    const replacementPctEl = document.getElementById("replacementPct");
+    const replacementPctValueEl = document.getElementById("replacementPctValue");
+
+    const gwpBaselineEl = document.getElementById("gwpBaseline");
+    const gwpPaebblEl = document.getElementById("gwpPaebbl");
+    const reductionAbsEl = document.getElementById("reductionAbs");
+    const reductionPctEl = document.getElementById("reductionPct");
+    const replacementSummaryEl = document.getElementById("replacementSummary");
+
+    const storagePillEl = document.getElementById("storagePill");
+    const storedCO2El = document.getElementById("storedCO2");
+
+    function format(x, decimals) {
+      return Number(x).toFixed(decimals);
+    }
+
+    function buildBaseline(cementKey) {
+      // Fixed "typical" concrete mix per m³ (adjust as needed)
+      return [
+        { key: cementKey, mass: 300 },       // cement
+        { key: "limestone", mass: 50 },
+        { key: "sand", mass: 800 },
+        { key: "gravel", mass: 950 },
+        { key: "admix_generic", mass: 5 },
+        { key: "water", mass: 180 }
+      ];
+    }
+
+    function recalc() {
+      const cementKey = cementTypeEl.value;
+      const replacementPct = parseFloat(replacementPctEl.value) || 0;
+
+      replacementPctValueEl.textContent = replacementPct.toString();
+      replacementSummaryEl.textContent = replacementPct.toString();
+
+      const baseline = buildBaseline(cementKey);
+      const paebblMix = generatePaebblMix(baseline, replacementPct, cementKey);
+
+      const result = calculate({
+        baseline,
+        paebbl: paebblMix,
+        storageFactorPerKgPaebbl: 0.9,
+        includeStorageInNet: false   // we explicitly don't use net in UI
+      });
+
+      gwpBaselineEl.textContent = format(result.gwpBaseline, 1);
+      gwpPaebblEl.textContent = format(result.gwpPaebbl, 1);
+      reductionAbsEl.textContent = format(result.reductionAbs, 1);
+      reductionPctEl.textContent = format(result.reductionPct, 1);
+
+      if (result.co2Stored && result.co2Stored > 0.0001) {
+        storagePillEl.style.display = "inline-flex";
+        storedCO2El.textContent = format(result.co2Stored, 1);
+      } else {
+        storagePillEl.style.display = "none";
+      }
+    }
+
+    [cementTypeEl, replacementPctEl].forEach((el) => {
+      el.addEventListener("input", recalc);
+      el.addEventListener("change", recalc);
+    });
+
+    // Initial run
+    recalc();
+  </script>
+</body>
+</html>
